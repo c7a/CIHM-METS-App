@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 
+use lib "/opt/tdr/current/lib/";
 use FindBin;
 use lib "$FindBin::RealBin/../";
 use CIHM::METS::App;
