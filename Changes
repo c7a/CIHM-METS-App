@@ -1,0 +1,5 @@
+Revision history for CIHM-METS-app
+
+0.01    2017-05-29 15:20:00
+        Moving code from private subversion repository, and wrapping in environment created by module-starter
+

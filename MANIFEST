@@ -1,0 +1,17 @@
+bin/mets
+Changes
+ignore.txt
+lib/CIHM/METS/App.pm
+lib/CIHM/METS/App/csv2dc.pm
+lib/CIHM/METS/App/csv2issue.pm
+lib/CIHM/METS/App/dbtext2lac.pm
+lib/CIHM/METS/App/Marc.pm
+lib/CIHM/METS/App/Set.pm
+Makefile.PL
+MANIFEST			This list of files
+README
+README.md
+t/00-load.t
+t/boilerplate.t
+t/manifest.t
+t/pod.t

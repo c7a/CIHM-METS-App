@@ -1,0 +1,12 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use FindBin;
+use lib "$FindBin::RealBin/../";
+use CIHM::METS::App;
+
+CIHM::METS::App->new_with_command->run;
+
+1;
