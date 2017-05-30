@@ -4,6 +4,9 @@ use MooseX::App;
 use Log::Log4perl;
 with 'MooseX::Log::Log4perl';
 use Data::Dumper;
+use Try::Tiny;
+use Module::Load::Conditional qw[can_load check_install requires];
+
 
 BEGIN {
   Log::Log4perl->init_once("/etc/canadiana/wip/log4perl.conf");
@@ -35,23 +38,47 @@ automatically be notified of progress on your bug as we make changes.
 
 =cut
 
-
+option 'dump' => (
+  is => 'rw',
+  isa => 'Bool',
+  documentation => q[Dump information to console rather than send to CouchDB],
+);
 
 has 'WIP' => (
     is => 'rw',
-    isa => 'CIHM::WIP',
     lazy => 1,
     builder => '_build_WIP',
 );
 
 sub _build_WIP {
     my $self = shift;
-    my $WIP = CIHM::WIP->new($self->conf);
-    if (!($WIP->wipmeta)) {
-        die "<wipmeta> access to wipmeta database not configured in ".$self->conf."\n";
+
+    my $WIP;
+    if (!$self->dump && can_load(modules => {
+        'CIHM::WIP' => undef
+                 })) {
+        $WIP = CIHM::WIP->new($self->conf);
+    }
+    if (!$WIP) {
+        warn "Not using CIHM::WIP\n";
     }
     return $WIP;
 };
+
+has 'objid' => (
+    is => 'rw',
+    isa => 'Str'
+);
+
+has 'myconfig' => (
+    is => 'rw',
+    isa => 'HashRef'
+);
+
+has 'identifier' => (
+    is => 'rw',
+    isa => 'Str'
+);
 
 option 'conf' => (
   is => 'rw',
@@ -60,12 +87,96 @@ option 'conf' => (
   documentation => q[An option that specifies where you can find a config file if not default],
 );
 
+parameter 'configid' => (
+  is => 'rw',
+  isa => 'Str',
+  required => 1,
+  documentation => q[The configuration ID (Example: heritage)],
+);
+
+option 'depositor' => (
+  is => 'rw',
+  isa => 'Str',
+  documentation => q[The depositor (Example: oocihm)],
+);
+
+sub set_objid {
+    my ($self,$identifier) = @_;
+
+    #trim whitespace
+    $identifier =~ s/^\s+|\s+$//g;
+
+    # If we have CIHM::WIP
+    if ($self->WIP) {
+        my $objid=$self->WIP->i2objid($identifier,$self->configid);
+        if (!$self->WIP->objid_valid($objid)) {
+            die "$objid not valid OBJID\n";
+        }
+        $self->objid($objid);
+    } else {
+        # Set identifier as objectID as we can't use translation without WIP
+        $self->objid($identifier);
+    }
+}
+
+
+sub setup {
+    my $self = shift;
+
+    # If we have CIHM::WIP
+    if ($self->WIP) {
+        if (!$self->depositor) {
+            my $configdocs=$self->WIP->configdocs ||
+                die "Can't retrieve configuration documents\n";
+
+            my $myconfig=$configdocs->{$self->configid} ||
+                die $self->configid." is not a valid configuration id\n";
+
+            $self->myconfig($myconfig);
+
+            my $depositor=$myconfig->{depositor} ||
+                die "Depositor not set for ".$self->configid."\n";
+
+            $self->depositor($depositor);
+        }
+    }
+    if ($self->identifier) {
+        $self->set_objid($self->identifier);
+    }
+    if (!$self->depositor) {
+        die "--depositor not set (and not available from configid)\n";
+    }
+    
+}
+
+sub itemlabel {
+    my $self = shift;
+
+    if ($self->myconfig) {
+        return $self->myconfig->{itemlabel};
+    }
+}
+
+
+sub dataDump {
+    my ($self,$uid,$params) = @_;
+
+    print Data::Dumper->Dump([$params], [$uid]);
+}
+
 sub couchSend {
     my ($self,$params) = @_;
+
+    my $uid=join('.',$self->depositor,$self->objid);
+
+
+    if (!$self->WIP) {
+        return $self->dataDump($uid,$params);
+    }
+
     my ($res, $revision);
 
     my $wipmeta=$self->WIP->wipmeta;
-    my $uid=$params->{uid};
     my $updatedoc={};
     if ($params->{label}) {
         $updatedoc->{label}=$params->{label};

@@ -4,23 +4,14 @@ use common::sense;
 use Encode;
 use MooseX::App::Command;
 use Try::Tiny;
-use CIHM::WIP;
 use Cwd qw(realpath);
 use File::Slurp;
-use Data::Dumper;
 use XML::LibXML;
 use feature qw(say);
 use Encode;
 use MARC::Batch;
 use MARC::File::XML (BinaryEncoding => 'utf8', RecordFormat => 'USMARC');
 extends qw(CIHM::METS::App);
-
-parameter 'configid' => (
-  is => 'rw',
-  isa => 'Str',
-  required => 1,
-  documentation => q[The configuration ID (Example: heritage)],
-);
 
 parameter 'marc' => (
   is => 'rw',
@@ -36,13 +27,6 @@ option 'idschema' => (
   documentation => q[Identifier extraction schema (ooe|oocihm|490)],
 );
 
-
-option 'dump' => (
-  is => 'rw',
-  isa => 'Bool',
-  documentation => q[Dump information to screen rather than to CouchDB],
-);
-
 option 'objid' => (
   is => 'rw',
   isa => 'Str',
@@ -56,14 +40,7 @@ command_short_description 'Sets metadata related fields and attachments in \'wip
 sub run {
   my ($self) = @_;
 
-  my $configdocs=$self->WIP->configdocs ||
-      die "Can't retrieve configuration documents\n";
-
-  my $myconfig=$configdocs->{$self->configid} ||
-      die $self->configid." is not a valid configuration id\n";
-
-  my $depositor=$myconfig->{depositor} ||
-      die "Depositor not set for ".$self->configid."\n";
+  $self->setup();
 
   my $file = $self->marc ||
   die "Can't retrieve marc file\n";
@@ -129,16 +106,11 @@ sub run {
           MARC::File::XML::footer()
       ));
 
-      if ($self->dump) {
-          print Data::Dumper->Dump(["$depositor.$objid",$label,$xml] , [qw(AIP label xml)]);
-      } else {
-          #send to couch
-          $self->couchSend({
-              uid => "$depositor.$objid",
-              label => $label,
-              dmdsec =>   $xml
-                           });
-      }
+      #send to couch
+      $self->couchSend({
+          label => $label,
+          dmdsec =>   $xml
+                       });
   }
 }
 

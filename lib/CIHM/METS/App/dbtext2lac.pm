@@ -3,19 +3,11 @@ package CIHM::METS::App::dbtext2lac;
 use common::sense;
 use Data::Dumper;
 use MooseX::App::Command;
-use CIHM::WIP;
 use XML::LibXML;
 use File::Basename;
 use feature qw(say);
 
 extends qw(CIHM::METS::App);
-
-parameter 'configid' => (
-  is => 'rw',
-  isa => 'Str',
-  required => 1,
-  documentation => q[The configuration ID (Example: heritage)],
-);
 
 parameter 'dmp' => (
   is => 'rw',
@@ -31,14 +23,7 @@ command_short_description 'Sets fields \'wipmeta\' database based on DB/Text xml
 sub run {
     my ($self) = @_;
 
-    my $configdocs=$self->WIP->configdocs ||
-        die "Can't retrieve configuration documents\n";
-
-    my $myconfig=$configdocs->{$self->configid} ||
-        die $self->configid." is not a valid configuration id\n";
-
-    ($self->{depositor}=$myconfig->{depositor}) ||
-        die "Depositor not set for ".$self->configid."\n";
+    $self->setup();
 
     my $file = $self->dmp ||
         die "Can't retrieve csv file\n";
@@ -63,7 +48,7 @@ sub run {
 
     my @series=keys $self->series;
     my $serieserror=0;
-    if (@series) {
+    if ($self->WIP && @series) {
         my $wipmeta=$self->WIP->wipmeta;
         $wipmeta->type("application/json");
         my $res = $wipmeta->post("/".$wipmeta->{database}."/_all_docs?include_docs=true",{keys => \@series}, {deserializer => 'application/json'});
@@ -93,10 +78,6 @@ sub run {
 sub xpc {
     my $self = shift;
     return $self->{xpc};
-}
-sub depositor {
-    my $self = shift;
-    return $self->{depositor};
 }
 sub series {
     my $self = shift;
@@ -231,20 +212,15 @@ sub process_record {
         die("Cannot process record with unknown type \"$type\"\n");
     }
 
-    if (!$self->WIP->objid_valid($objid)) {
-        die "$objid not valid OBJID\n";
-    }
+    $self->set_objid($objid);
 
     my $updatedoc = {
-        uid => join('.',$self->depositor,$objid),
         label => $label,
         dmdsec => $doc->toString(1)
     };
 
     #send to couch
     $self->couchSend($updatedoc);
-
-
 }
 
 sub add_value {

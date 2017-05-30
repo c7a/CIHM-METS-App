@@ -4,7 +4,6 @@ use common::sense;
 use Data::Dumper;
 use MooseX::App::Command;
 use Try::Tiny;
-use CIHM::WIP;
 use Cwd qw(realpath);
 use File::Slurp;
 use JSON;
@@ -12,12 +11,6 @@ use Text::CSV_XS;
 
 extends qw(CIHM::METS::App);
 
-parameter 'configid' => (
-  is => 'rw',
-  isa => 'Str',
-  required => 1,
-  documentation => q[The configuration ID (Example: heritage)],
-);
 parameter 'identifier' => (
   is => 'rw',
   isa => 'Str',
@@ -59,19 +52,7 @@ command_short_description 'Sets metadata related fields and attachments in \'wip
 sub run {
   my ($self) = @_;
 
-  my $configdocs=$self->WIP->configdocs ||
-      die "Can't retrieve configuration documents\n";
-
-  my $myconfig=$configdocs->{$self->configid} ||
-      die $self->configid." is not a valid configuration id\n";
-
-  my $depositor=$myconfig->{depositor} ||
-      die "Depositor not set for ".$self->configid."\n";
-
-  my $objid=$self->WIP->i2objid($self->identifier,$self->configid);
-  if (!$self->WIP->objid_valid($objid)) {
-      die "$objid not valid OBJID\n";
-  }
+  $self->setup();
 
   # Load the provided label file
   if ($self->loadlabel) {
@@ -145,7 +126,6 @@ sub run {
   # Common function used to send them to CouchDB, no matter how they were
   # generated.
   $self->couchSend({
-      uid => "$depositor.$objid",
       label => $self->setlabel,
       clabels => $labels,
       dmdsec => $dmdsec,

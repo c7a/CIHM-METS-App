@@ -4,7 +4,6 @@ use common::sense;
 use Data::Dumper;
 use MooseX::App::Command;
 use Try::Tiny;
-use CIHM::WIP;
 use Cwd qw(realpath);
 use File::Slurp;
 use JSON;
@@ -17,13 +16,6 @@ use feature qw(say);
 
 extends qw(CIHM::METS::App);
 
-parameter 'configid' => (
-  is => 'rw',
-  isa => 'Str',
-  required => 1,
-  documentation => q[The configuration ID (Example: heritage)],
-);
-
 parameter 'csv' => (
   is => 'rw',
   isa => 'Str',
@@ -31,21 +23,12 @@ parameter 'csv' => (
   documentation => q[A csv file containing metadata records],
 );
 
-
 command_short_description 'Sets metadata related fields and attachments in \'wipmeta\' database';
-
 
 sub run {
     my ($self) = @_;
 
-    my $configdocs=$self->WIP->configdocs ||
-        die "Can't retrieve configuration documents\n";
-
-    my $myconfig=$configdocs->{$self->configid} ||
-        die $self->configid." is not a valid configuration id\n";
-
-    my $depositor=$myconfig->{depositor} ||
-        die "Depositor not set for ".$self->configid."\n";
+    $self->setup();
 
     my $file = $self->csv ||
         die "Can't retrieve csv file\n";
@@ -56,13 +39,15 @@ sub run {
     #process csv file
     my $csv = Text::CSV->new({binary=>1});
     open my $fh, "<:encoding(utf8)", $file or die "Cannot read $file: $!\n";
+
     my $header = $csv->getline($fh);
+    #get object id
+    my $objid_column = first {@$header[$_] && @$header[$_] eq 'objid'}0..@$header;
+    if (!defined $objid_column) {
+        die "column 'objid' header not found in first row\n"; 
+    }
 
     while(my $row = $csv->getline($fh)) {
-	
-        #get object id
-        my $objid_column = first {@$header[$_] eq 'objid'}0..@$header;
-	  
         #process each metadata record based on the object ID	
         foreach my $id ($row->[$objid_column]){
             if (!$id || $id =~ /^\s*$/) {
@@ -70,12 +55,9 @@ sub run {
                 next;
             }
 		
-            my $objid=$self->WIP->i2objid($id, $self->configid);
-            if (!$self->WIP->objid_valid($objid)) {
-                die "$objid not valid OBJID\n";
-            }
+            $self->set_objid($id);
 
-            say STDERR "processing: $objid";
+            say STDERR "processing: ".$self->objid;
             my $doc = XML::LibXML::Document->new("1.0", "UTF-8");
             my $root = $doc->createElement('simpledc');
 #            $root->setAttribute('xmlns:dc' => 'http://purl.org/dc/elements/1.1/');
@@ -105,7 +87,6 @@ sub run {
             $schema->validate($doc);
             
             my $updatedoc = {
-                uid => "$depositor.$objid",
                 dmdsec => $doc->toString(1)
             };
 

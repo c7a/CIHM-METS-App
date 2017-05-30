@@ -4,7 +4,6 @@ use common::sense;
 use Data::Dumper;
 use MooseX::App::Command;
 use Try::Tiny;
-use CIHM::WIP;
 use Cwd qw(realpath);
 use File::Slurp;
 use JSON;
@@ -16,13 +15,6 @@ use File::Basename;
 use feature qw(say);
 
 extends qw(CIHM::METS::App);
-
-parameter 'configid' => (
-  is => 'rw',
-  isa => 'Str',
-  required => 1,
-  documentation => q[The configuration ID (Example: heritage)],
-);
 
 parameter 'csv' => (
   is => 'rw',
@@ -38,18 +30,11 @@ command_short_description 'Sets metadata related fields and attachments in \'wip
 sub run {
     my ($self) = @_;
 
-    my $configdocs=$self->WIP->configdocs ||
-        die "Can't retrieve configuration documents\n";
+    $self->setup();
 
-    my $myconfig=$configdocs->{$self->configid} ||
-        die $self->configid." is not a valid configuration id\n";
-
-    my $depositor=$myconfig->{depositor} ||
-        die "Depositor not set for ".$self->configid."\n";
-    
-    my $label=$myconfig->{itemlabel};
+    my $label=$self->itemlabel;
     if (!$label) {
-        warn "item label not set for configid=".$self->configid." , will use default value 'column'\n";
+        warn "'itemlabel' not set for configid=".$self->configid." , will use default value 'column'\n";
         $label='column';
     }
 
@@ -111,14 +96,8 @@ sub run {
                 next;
             }
 
-            #trim whitespace
-            $id =~ s/^\s+|\s+$//g;
-
-            say STDERR "processing: $id";			
-            my $objid=$self->WIP->i2objid($id, $self->configid);
-            if (!$self->WIP->objid_valid($objid)) {
-                die "$objid not valid OBJID\n";
-            }
+            $self->set_objid($id);
+            say STDERR "processing: ".$self->objid;
 
             my $doc = XML::LibXML::Document->new("1.0", "UTF-8");
             my $root = $doc->createElement('issueinfo');
@@ -159,7 +138,7 @@ sub run {
                                 }
                                 $root->appendChild($child);
                                 if ($element eq 'series') {
-                                    $series{$depositor.'.'.$_}=1;
+                                    $series{$self->depositor.'.'.$_}=1;
                                 }
                             }
                         }
@@ -190,7 +169,6 @@ sub run {
 
             #send to couch
             $self->couchSend({
-                uid => "$depositor.$objid",
                 label => $mets_label,
                 dmdsec => $doc->toString (1),
                              });
@@ -198,7 +176,7 @@ sub run {
     }
     my @series=keys %series;
     my $serieserror=0;
-    if (@series) {
+    if ($self->WIP && @series) {
         my $wipmeta=$self->WIP->wipmeta;
         $wipmeta->type("application/json");
         my $res = $wipmeta->post("/".$wipmeta->{database}."/_all_docs?include_docs=true",{keys => \@series}, {deserializer => 'application/json'});
