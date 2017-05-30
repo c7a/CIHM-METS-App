@@ -1,16 +1,9 @@
 package CIHM::METS::App;
 
 use MooseX::App;
-use Log::Log4perl;
-with 'MooseX::Log::Log4perl';
 use Data::Dumper;
 use Try::Tiny;
 use Module::Load::Conditional qw[can_load check_install requires];
-
-
-BEGIN {
-  Log::Log4perl->init_once("/etc/canadiana/wip/log4perl.conf");
-}
 
 =head1 NAME
 
