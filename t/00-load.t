@@ -7,7 +7,7 @@ use Test::More;
 plan tests => 1;
 
 BEGIN {
-    use_ok( 'CIHM::METS::app' ) || print "Bail out!\n";
+    use_ok( 'CIHM::METS::App' ) || print "Bail out!\n";
 }
 
-diag( "Testing CIHM::METS::app $CIHM::METS::app::VERSION, Perl $], $^X" );
+diag( "Testing CIHM::METS::App $CIHM::METS::App::VERSION, Perl $], $^X" );

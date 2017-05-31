@@ -27,7 +27,7 @@ option 'idschema' => (
   documentation => q[Identifier extraction schema (ooe|oocihm|490)],
 );
 
-option 'objid' => (
+option 'forceobjid' => (
   is => 'rw',
   isa => 'Str',
   documentation => q[Force this OBJID, and don't use idschema.  Only useful for single record marc files],
@@ -59,16 +59,15 @@ sub run {
           next;  # Don't try to store based on this record
       }
 
-      my $objid;
-
-      if ($self->objid) {
-          $objid=$self->objid;
+      if ($self->forceobjid) {
+          $self->set_objid($self->forceobjid);
       }
       # Get the OBJID - based on legacy production/marcsplit
       elsif ($self->idschema eq 'ooe') {
-          $objid=substr($record->subfield('035', 'a'),1);
+          $self->set_objid(substr($record->subfield('035', 'a'),1));
       }
       elsif ($self->idschema eq '490' || $self->idschema eq 'oocihm') {
+          my $objid;
           my $sf3=$record->subfield(490, "3");
           my $sfv=$record->subfield(490, "v");
           if ($sfv && $sfv ne '') {
@@ -81,6 +80,7 @@ sub run {
                       $objid =~ s/[^0-9_]//g;
                   }
               }
+              $self->set_objid($objid);
           } else {
               warn "490v is missing\n";
           }
@@ -89,16 +89,12 @@ sub run {
           die("Unknown identifier extraction scheme: ". $self->idschema . "\n");
       }
 
-      if (!$objid) {
+      if (!$self->objid) {
           warn "OBJID wasn't able to be determined\n";
           next;  # Don't try to store based on this record
       }
-      if (!($self->WIP->objid_valid($objid))) {
-          warn "$objid not valid OBJID\n";
-          next;  # Don't try to store based on this record
-      }
 
-      say STDERR "processing: $objid";
+      say STDERR "processing: ".$self->objid;
       #create xml structure -- using the "encode_utf8" function to encode to Perl's internal format 
       my $xml = encode_utf8(join( "",
           MARC::File::XML::header(),

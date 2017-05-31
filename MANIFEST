@@ -13,5 +13,9 @@ README
 README.md
 t/00-load.t
 t/boilerplate.t
+t/files/ExampleofgoodMARCrecord4Periodicals.mrc
+t/files/heritage-issues.csv
+t/files/heritage-issues.dmp
+t/files/heritage-series.csv
 t/manifest.t
 t/pod.t
