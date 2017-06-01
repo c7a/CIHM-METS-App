@@ -5,6 +5,7 @@ lib/CIHM/METS/App.pm
 lib/CIHM/METS/App/csv2dc.pm
 lib/CIHM/METS/App/csv2issue.pm
 lib/CIHM/METS/App/dbtext2lac.pm
+lib/CIHM/METS/App/dbtext2news.pm
 lib/CIHM/METS/App/Marc.pm
 lib/CIHM/METS/App/Set.pm
 Makefile.PL
@@ -17,5 +18,7 @@ t/files/ExampleofgoodMARCrecord4Periodicals.mrc
 t/files/heritage-issues.csv
 t/files/heritage-issues.dmp
 t/files/heritage-series.csv
+t/files/news_issues.dmp
+t/files/news_series.dmp
 t/manifest.t
 t/pod.t
