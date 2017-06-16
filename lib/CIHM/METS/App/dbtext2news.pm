@@ -3,6 +3,7 @@ package CIHM::METS::App::dbtext2news;
 use common::sense;
 use Data::Dumper;
 use MooseX::App::Command;
+use Types::Standard qw(Enum);
 use XML::LibXML;
 use File::Basename;
 use feature qw(say);
@@ -24,7 +25,12 @@ option 'type' => (
   documentation => q[Indicates if dump file has 'issues' or 'series' data],
 );
 
-
+option 'seq' => (
+    is => 'ro',
+    isa => Enum[qw/ news periodical /],
+    default => "news",
+    documentation => q[Indicates how sequence is generated: 'news' or 'periodical']
+);
 
 
 command_short_description 'Sets fields \'wipmeta\' database based on DB/Text xml dumps';
@@ -135,10 +141,12 @@ sub processIssueRecord {
     if (! $seq =~ /^\d+$/) {
         die "Sequence composed from $ord must have seq=$seq of only digits\n";
     }
-    if (length($seq) == 6) {
-        $seq .= '01';
-    } elsif (length($seq) != 8) {
-        die "Sequence composed from $ord must have seq=$seq of 6 or 8 digits\n";
+    if ($self->seq eq 'news') {
+        if (length($seq) == 6) {
+            $seq .= '01';
+        } elsif (length($seq) != 8) {
+            die "Sequence composed from $ord must have seq=$seq of 6 or 8 digits\n";
+        }
     }
     add_value($doc, 'sequence', $seq);
 
