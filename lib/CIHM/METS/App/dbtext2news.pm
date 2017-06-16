@@ -18,9 +18,9 @@ parameter 'dmp' => (
   documentation => q[An Inmagic DB/TextWorks file containing metadata records for newspapers (issues and series)],
 );
 
-option 'type' => (
+option 'dumptype' => (
   is => 'rw',
-  isa => 'Str',
+  isa => Enum[qw/ issues series /],
   default => "issues",
   documentation => q[Indicates if dump file has 'issues' or 'series' data],
 );
@@ -56,7 +56,7 @@ sub run {
 
     say STDERR "Processing ".scalar(@records)." records: \n"; 
     foreach my $record (@records) {
-        if ($self->type eq 'issues') {
+        if ($self->dumptype eq 'issues') {
             $self->processIssueRecord($record);
         } else {
             $self->processSeriesRecord($record);
@@ -106,8 +106,6 @@ sub processIssueRecord {
     my($self,$record) = @_;
 
     my $doc = XML::LibXML::Document->new('1.0', 'UTF-8');
-    my $type = $self->xpc->findvalue('inm:Type', $record);
-
 
     my $root = $doc->createElement('issueinfo');
     $root->setAttribute('xmlns', 'http://canadiana.ca/schema/2012/xsd/issueinfo');
