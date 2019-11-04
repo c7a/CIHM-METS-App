@@ -71,7 +71,7 @@ sub run {
             if (!exists $headers{$header}) {
                 $headers{$header}=[];
             }
-            push $headers{$header}, $value;
+            push @{$headers{$header}}, $value;
         } else {
             push @unknownheader, $header;
         }

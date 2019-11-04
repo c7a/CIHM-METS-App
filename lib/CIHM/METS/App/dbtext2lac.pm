@@ -46,7 +46,7 @@ sub run {
         $self->process_record($record);
     }
 
-    my @series=keys $self->series;
+    my @series=keys %{$self->series};
     my $serieserror=0;
     if ($self->WIP && @series) {
         my $wipmeta=$self->WIP->wipmeta;
@@ -117,7 +117,7 @@ sub process_record {
         if (!exists $self->series->{$seriesid}) {
             $self->series->{$seriesid}=[];
         };
-        push  $self->series->{$seriesid},$label;
+        push  @{$self->series->{$seriesid}},$label;
         add_value($doc, 'series', $series);
 
         add_value($doc, 'title', join(' - ', $self->xpc->findvalue('inm:Title', $record), $seq));

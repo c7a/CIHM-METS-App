@@ -63,7 +63,7 @@ sub run {
         }
     }
 
-    my @series=keys $self->series;
+    my @series=keys %{$self->series};
     my $serieserror=0;
     if ($self->WIP && @series) {
         my $wipmeta=$self->WIP->wipmeta;
@@ -125,7 +125,7 @@ sub processIssueRecord {
     if (!exists $self->series->{$seriesid}) {
         $self->series->{$seriesid}=[];
     };
-    push  $self->series->{$seriesid},$label;
+    push  @{$self->series->{$seriesid}},$label;
     add_value($doc, 'series', $series);
 
     add_value($doc, 'title', $self->xpc->findvalue('inm:TI', $record));
@@ -219,7 +219,7 @@ sub processSeriesRecord {
 # DT
     foreach my $date (split('-',$dt)) {
         next if ($date =~ /^\s*$/);
-        if ($date =~ /(\d{4}?)/) {
+        if ($date =~ /(\d{4})/) {
             add_value($doc, 'dc:date', $1);
         } else {
             warn "$date not understood as year\n";
