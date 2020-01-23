@@ -136,6 +136,9 @@ sub processIssueRecord {
     }
     # Take the 3'rd component
     my $seq=$ordparts[2];
+    if (! $seq) {
+        die "ORD=$ord is missing the third component\n";
+    }
     if (! $seq =~ /^\d+$/) {
         die "Sequence composed from $ord must have seq=$seq of only digits\n";
     }
@@ -150,7 +153,7 @@ sub processIssueRecord {
 
     add_field($doc, 'language', $self->xpc->findnodes('inm:Lang', $record));
     add_field($doc, 'published', $self->xpc->findnodes('inm:IssueDate', $record));
-    add_value($doc, 'source', $self->xpc->findvalue('inm:533', $record));
+    add_field($doc, 'source', $self->xpc->findnodes('inm:_533', $record));
 
 
     $updatedoc->{'dmdsec'} = $doc->toString(1);
@@ -241,14 +244,14 @@ sub processSeriesRecord {
     add_field($doc, 'dc:coverage', $self->xpc->findnodes('inm:City', $record));
 
 
-    add_field($doc, 'dc:description', $self->xpc->findnodes('inm:362', $record));
-    add_field($doc, 'dc:description', $self->xpc->findnodes('inm:515', $record));
+    add_field($doc, 'dc:description', $self->xpc->findnodes('inm:_362', $record));
+    add_field($doc, 'dc:description', $self->xpc->findnodes('inm:_515', $record));
 
     add_value($doc, 'dc:format', 'Text');
 
-    add_field($doc, 'dc:description', $self->xpc->findnodes('inm:525', $record));
-    add_field($doc, 'dc:description', $self->xpc->findnodes('inm:580', $record));
-    add_field($doc, 'dc:description', $self->xpc->findnodes('inm:588', $record));
+    add_field($doc, 'dc:description', $self->xpc->findnodes('inm:_525', $record));
+    add_field($doc, 'dc:description', $self->xpc->findnodes('inm:_580', $record));
+    add_field($doc, 'dc:description', $self->xpc->findnodes('inm:_588', $record));
 
     # TODO: This should be a NOP, but is required -- why?
     $doc= XML::LibXML->load_xml(string => $doc->toString(0));
